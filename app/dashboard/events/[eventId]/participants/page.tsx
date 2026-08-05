@@ -71,7 +71,7 @@ export default function ParticipantsPage() {
   }, [search]);
 
   async function cancelOrder(orderId: string) {
-    if (!confirm("Annuler cette commande ? Tous ses billets deviendront invalides et le quota sera libéré. (Paiement simulé : aucun remboursement réel n'est déclenché.)")) return;
+    if (!confirm("Annuler cette commande ? Tous ses billets deviendront invalides et le quota sera libéré. Aucun remboursement n'est déclenché automatiquement — si la commande a été payée via K-Pay, tu dois rembourser l'acheteur toi-même (tableau de bord K-Pay ou autre moyen).")) return;
     setCancellingOrderId(orderId);
     setError(null);
     const supabase = createClient();
