@@ -63,10 +63,12 @@ RESEND_FROM_EMAIL=EventPro <onboarding@resend.dev>
 ```
 
 ### Rappels/remerciements automatiques
-- **Vercel** : `vercel.json` est déjà configuré (toutes les 30 min) — définis `CRON_SECRET` dans
-  les variables d'environnement du projet Vercel.
-- **Sinon** : un service de cron externe (cron-job.org, tâche planifiée...) doit appeler
-  `GET https://ton-domaine/api/cron/run?secret=<CRON_SECRET>` toutes les 30 min.
+- **Vercel** : `vercel.json` est déjà configuré (une fois par jour à 8h — le plan Hobby de
+  Vercel n'autorise qu'une exécution quotidienne pour les cron jobs) — définis `CRON_SECRET`
+  dans les variables d'environnement du projet Vercel. Sur un plan payant, la fréquence peut
+  être augmentée (ex. `*/30 * * * *` pour toutes les 30 min).
+- **Sinon** : un service de cron externe gratuit (cron-job.org, tâche planifiée...) peut appeler
+  `GET https://ton-domaine/api/cron/run?secret=<CRON_SECRET>` plus fréquemment si besoin.
 - **Test local** : `curl "http://localhost:3000/api/cron/run?secret=<valeur de CRON_SECRET dans .env.local>"`
 
 ## Gestion avancée des événements

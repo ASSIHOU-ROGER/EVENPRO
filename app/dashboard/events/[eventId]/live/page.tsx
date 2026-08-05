@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord, TicketCategoryRecord } from "@/lib/types";
-import { CheckCircle2, XCircle, Maximize, Radio, AlertTriangle, Clock, Users } from "lucide-react";
+import { CheckCircle2, XCircle, Maximize, Radio, AlertTriangle, Clock, Users, Ticket, Percent } from "lucide-react";
 
 interface FeedItem {
   id: string;
@@ -32,6 +32,7 @@ export default function LiveDashboardPage() {
   const [soldCount, setSoldCount] = useState(0);
   const [invalidCount, setInvalidCount] = useState(0);
   const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [flashId, setFlashId] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [connected, setConnected] = useState(false);
   const ticketLookupRef = useRef<Record<string, { holder_name: string; ticket_number: string }>>({});
@@ -99,6 +100,8 @@ export default function LiveDashboardPage() {
               ...prev,
             ].slice(0, 20)
           );
+          setFlashId(row.id);
+          setTimeout(() => setFlashId((cur) => (cur === row.id ? null : cur)), 1500);
         }
       )
       .subscribe((status) => setConnected(status === "SUBSCRIBED"));
@@ -146,6 +149,11 @@ export default function LiveDashboardPage() {
     already_used: "text-orange-400",
     invalid: "text-red-400",
   };
+  const RESULT_BORDERS: Record<string, string> = {
+    valid: "border-l-green-400",
+    already_used: "border-l-orange-400",
+    invalid: "border-l-red-400",
+  };
   const RESULT_LABELS: Record<string, string> = {
     valid: "Entré",
     already_used: "Déjà scanné",
@@ -157,9 +165,15 @@ export default function LiveDashboardPage() {
     invalid: XCircle,
   };
 
+  const ringCirc = 2 * Math.PI * 42;
+  const ringOffset = fillRate !== null ? ringCirc - (Math.min(100, fillRate) / 100) * ringCirc : ringCirc;
+
   return (
-    <div ref={containerRef} className="min-h-screen bg-navy px-6 py-10 text-white">
-      <div className="no-print mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-navy px-6 py-10 text-white">
+      <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gold/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+
+      <div className="relative no-print mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <Link href={`/dashboard/events/${eventId}`} className="text-sm text-gray-300 hover:underline">
             ← Retour à la gestion
@@ -184,51 +198,78 @@ export default function LiveDashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl bg-white/10 p-6 text-center sm:p-8">
-          <p className="text-4xl font-black text-gold sm:text-6xl">{usedCount}</p>
-          <p className="mt-2 text-xs uppercase tracking-wide text-gray-300 sm:text-sm">Billets scannés</p>
+      <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
+        {/* Fill-rate ring */}
+        <div className="flex items-center justify-center rounded-2xl bg-white/5 p-8">
+          <div className="relative flex h-44 w-44 items-center justify-center">
+            <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="9" />
+              <circle
+                cx="50"
+                cy="50"
+                r="42"
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray={ringCirc}
+                strokeDashoffset={ringOffset}
+                style={{ transition: "stroke-dashoffset 0.6s ease" }}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+              <span className="text-3xl font-black">{fillRate !== null ? `${fillRate}%` : "—"}</span>
+              <span className="mt-1 text-[10px] uppercase tracking-widest text-gray-400">Remplissage</span>
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl bg-white/10 p-6 text-center sm:p-8">
-          <p className="text-4xl font-black sm:text-6xl">{soldCount}</p>
-          <p className="mt-2 text-xs uppercase tracking-wide text-gray-300 sm:text-sm">Billets vendus</p>
-        </div>
-        <div className="rounded-xl bg-white/10 p-6 text-center sm:p-8">
-          <p className="text-4xl font-black sm:text-6xl">{fillRate !== null ? `${fillRate}%` : "—"}</p>
-          <p className="mt-2 text-xs uppercase tracking-wide text-gray-300 sm:text-sm">Taux de remplissage</p>
-        </div>
-        <div className="rounded-xl bg-white/10 p-6 text-center sm:p-8">
-          <p className={`text-4xl font-black sm:text-6xl ${invalidCount > 0 ? "text-red-400" : ""}`}>{invalidCount}</p>
-          <p className="mt-2 text-xs uppercase tracking-wide text-gray-300 sm:text-sm">Tentatives refusées</p>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="flex flex-col justify-between rounded-2xl bg-white/10 p-5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/20 text-gold">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+            <p className="mt-4 text-3xl font-black text-gold sm:text-4xl">{usedCount}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-gray-300">Billets scannés</p>
+          </div>
+          <div className="flex flex-col justify-between rounded-2xl bg-white/10 p-5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white">
+              <Ticket className="h-4 w-4" />
+            </div>
+            <p className="mt-4 text-3xl font-black sm:text-4xl">{soldCount}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-gray-300">Billets vendus</p>
+          </div>
+          <div className="flex flex-col justify-between rounded-2xl bg-white/10 p-5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-400/20 text-green-400">
+              <Percent className="h-4 w-4" />
+            </div>
+            <p className="mt-4 text-3xl font-black sm:text-4xl">{checkInRate !== null ? `${checkInRate}%` : "—"}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-gray-300">Taux d'entrée</p>
+          </div>
+          <div className="flex flex-col justify-between rounded-2xl bg-white/10 p-5">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${invalidCount > 0 ? "bg-red-400/20 text-red-400" : "bg-white/10 text-white"}`}>
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <p className={`mt-4 text-3xl font-black sm:text-4xl ${invalidCount > 0 ? "text-red-400" : ""}`}>{invalidCount}</p>
+            <p className="mt-1 text-xs uppercase tracking-wide text-gray-300">Tentatives refusées</p>
+          </div>
         </div>
       </div>
 
-      {checkInRate !== null && (
-        <div className="mt-6 rounded-xl bg-white/5 p-4">
-          <div className="flex items-center justify-between text-xs text-gray-300">
-            <span className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Taux d'entrée (scannés / vendus)</span>
-            <span>{checkInRate}%</span>
-          </div>
-          <div className="mt-2 h-2.5 w-full rounded-full bg-white/10">
-            <div className="h-2.5 rounded-full bg-green-400" style={{ width: `${Math.min(100, checkInRate)}%` }} />
-          </div>
-        </div>
-      )}
-
-      <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="relative mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div>
           <h2 className="mb-4 text-lg font-bold uppercase tracking-wide text-gray-300">Par catégorie</h2>
-          <div className="space-y-4">
+          <div className="space-y-4 rounded-2xl bg-white/5 p-5">
             {categories.length === 0 && <p className="text-gray-400">Aucune catégorie.</p>}
             {categories.map((c) => {
               const used = usedByCategory[c.id] ?? 0;
               return (
                 <div key={c.id}>
                   <div className="flex justify-between text-sm text-gray-200">
-                    <span>{c.name}</span>
-                    <span>{used} entrés · {c.sold_count} / {c.quota || "∞"} vendus</span>
+                    <span className="font-medium">{c.name}</span>
+                    <span className="text-gray-400">{used} entrés · {c.sold_count} / {c.quota || "∞"} vendus</span>
                   </div>
-                  <div className="mt-1 h-2 w-full rounded-full bg-white/10">
+                  <div className="mt-1.5 h-2 w-full rounded-full bg-white/10">
                     <div
                       className="h-2 rounded-full bg-gold"
                       style={{ width: c.quota > 0 ? `${Math.min(100, (c.sold_count / c.quota) * 100)}%` : "100%" }}
@@ -249,13 +290,21 @@ export default function LiveDashboardPage() {
         </div>
 
         <div>
-          <h2 className="mb-4 text-lg font-bold uppercase tracking-wide text-gray-300">Derniers scans</h2>
-          <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-            {feed.length === 0 && <p className="text-gray-400">En attente des premiers scans...</p>}
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold uppercase tracking-wide text-gray-300">
+            <Users className="h-4 w-4" />
+            Derniers scans
+          </h2>
+          <div className="max-h-[420px] space-y-2 overflow-y-auto rounded-2xl bg-white/5 p-3 pr-2">
+            {feed.length === 0 && <p className="px-2 py-4 text-gray-400">En attente des premiers scans...</p>}
             {feed.map((f) => {
               const Icon = RESULT_ICONS[f.result] ?? XCircle;
               return (
-                <div key={f.id} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-sm">
+                <div
+                  key={f.id}
+                  className={`flex items-center justify-between rounded-xl border-l-4 bg-white/5 px-3 py-2.5 text-sm transition-colors ${RESULT_BORDERS[f.result]} ${
+                    flashId === f.id ? "bg-white/20" : ""
+                  }`}
+                >
                   <div>
                     <span>{f.holder_name}</span>
                     {f.ticket_number && <span className="ml-2 font-mono text-xs text-gray-400">{f.ticket_number}</span>}
@@ -271,12 +320,6 @@ export default function LiveDashboardPage() {
               );
             })}
           </div>
-          {invalidCount > 0 && (
-            <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-red-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {invalidCount} tentative(s) avec un billet invalide depuis le début.
-            </p>
-          )}
         </div>
       </div>
     </div>
