@@ -12,7 +12,8 @@ module.exports = {
         gold: '#2563eb',
       },
       fontFamily: {
-        display: ['var(--font-outfit)', 'sans-serif'],
+        display: ['var(--font-wisteria)', 'serif'],
+        sans: ['var(--font-outfit)', 'sans-serif'],
       },
     },
   },
