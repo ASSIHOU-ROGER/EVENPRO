@@ -1,18 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord, TicketCategoryRecord, SponsorRecord, ProgramSessionRecord, OrganizationRecord } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
-import { Calendar, MapPin, Download, FileDown, ChevronDown, Ticket, Minus, Plus } from "lucide-react";
-
-interface PurchasedTicket {
-  ticket_number: string;
-  qr_token: string;
-  category: string;
-  qrDataUrl?: string;
-}
+import { Calendar, MapPin, ChevronDown, Ticket, Minus, Plus, Smartphone, CreditCard } from "lucide-react";
+import { TicketCard, type PurchasedTicket } from "@/components/public/TicketCard";
 
 export function PublicEventClient({ slug }: { slug: string }) {
   const [event, setEvent] = useState<EventRecord | null>(null);
@@ -28,6 +22,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [pmethod, setPmethod] = useState<"momo" | "cc">("momo");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<{
@@ -87,45 +82,79 @@ export function PublicEventClient({ slug }: { slug: string }) {
     }
 
     setSubmitting(true);
-    const supabase = createClient();
-    const { data, error: rpcError } = await supabase.rpc("purchase_tickets", {
-      p_event_id: event.id,
-      p_buyer_name: buyerName,
-      p_buyer_email: buyerEmail,
-      p_buyer_phone: buyerPhone,
-      p_items: items,
-    });
 
-    if (rpcError) {
-      setError(rpcError.message.includes("sold_out") ? "Une catégorie sélectionnée est épuisée." : rpcError.message);
+    // Billets gratuits : émission immédiate, pas de passage par K-Pay.
+    if (total === 0) {
+      const supabase = createClient();
+      const { data, error: rpcError } = await supabase.rpc("purchase_tickets", {
+        p_event_id: event.id,
+        p_buyer_name: buyerName,
+        p_buyer_email: buyerEmail,
+        p_buyer_phone: buyerPhone,
+        p_items: items,
+      });
+
+      if (rpcError) {
+        setError(rpcError.message.includes("sold_out") ? "Une catégorie sélectionnée est épuisée." : rpcError.message);
+        setSubmitting(false);
+        return;
+      }
+
+      const tickets: PurchasedTicket[] = data.tickets;
+      for (const t of tickets) {
+        t.qrDataUrl = await QRCode.toDataURL(t.qr_token, { width: 360, margin: 1 });
+      }
+
+      setConfirmation({ orderId: data.order_id, total: data.total_amount, currency: data.currency, tickets });
       setSubmitting(false);
+
+      fetch("/api/send-ticket-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          buyerName,
+          buyerEmail,
+          eventName: event.name,
+          eventDate: event.event_date
+            ? new Date(event.event_date).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })
+            : undefined,
+          eventLocation: event.location,
+          tickets,
+          totalAmount: data.total_amount,
+          currency: data.currency,
+        }),
+      }).catch(() => {});
       return;
     }
 
-    const tickets: PurchasedTicket[] = data.tickets;
-    for (const t of tickets) {
-      t.qrDataUrl = await QRCode.toDataURL(t.qr_token, { width: 360, margin: 1 });
+    // Billets payants : on crée une commande en attente puis on redirige vers le paiement K-Pay
+    // (Mobile Money ou carte bancaire). Les billets ne sont émis qu'une fois le paiement confirmé
+    // côté serveur (voir /paiement/retour et /api/payments/kpay/webhook).
+    try {
+      const res = await fetch("/api/payments/kpay/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: event.id,
+          eventName: event.name,
+          buyerName,
+          buyerEmail,
+          buyerPhone,
+          items,
+          pmethod,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Impossible d'initier le paiement.");
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setError("Impossible de contacter le service de paiement. Réessaie dans un instant.");
+      setSubmitting(false);
     }
-
-    setConfirmation({ orderId: data.order_id, total: data.total_amount, currency: data.currency, tickets });
-    setSubmitting(false);
-
-    fetch("/api/send-ticket-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        buyerName,
-        buyerEmail,
-        eventName: event.name,
-        eventDate: event.event_date
-          ? new Date(event.event_date).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })
-          : undefined,
-        eventLocation: event.location,
-        tickets,
-        totalAmount: data.total_amount,
-        currency: data.currency,
-      }),
-    }).catch(() => {});
   }
 
   if (loading) return <main><Navbar /><p className="p-8 text-center text-gray-500">Chargement...</p></main>;
@@ -285,9 +314,46 @@ export function PublicEventClient({ slug }: { slug: string }) {
                 <input type="email" className="input" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} required />
               </div>
               <div>
-                <label className="label">Téléphone</label>
-                <input className="input" value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)} />
+                <label className="label">Téléphone {total > 0 && "(avec indicatif pays, ex. 250783000000)"}</label>
+                <input
+                  className="input"
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  placeholder={total > 0 ? "250783000000" : undefined}
+                  required={total > 0}
+                />
               </div>
+
+              {total > 0 && (
+                <div>
+                  <label className="label">Mode de paiement</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPmethod("momo")}
+                      className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
+                        pmethod === "momo" ? "border-transparent text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                      style={pmethod === "momo" ? { backgroundColor: brandColor } : undefined}
+                    >
+                      <Smartphone className="h-4 w-4" />
+                      Mobile Money
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPmethod("cc")}
+                      className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
+                        pmethod === "cc" ? "border-transparent text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                      style={pmethod === "cc" ? { backgroundColor: brandColor } : undefined}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Carte bancaire
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                 <span className="text-sm text-gray-500">{totalItems} billet(s)</span>
                 <span className="text-lg font-bold text-navy">{total.toFixed(2)} {categories[0]?.currency || "EUR"}</span>
@@ -299,11 +365,13 @@ export function PublicEventClient({ slug }: { slug: string }) {
                 style={{ backgroundColor: brandColor }}
                 disabled={submitting || totalItems === 0}
               >
-                {submitting ? "Traitement..." : total > 0 ? "Payer et obtenir mes billets" : "Obtenir mes billets"}
+                {submitting ? "Traitement..." : total > 0 ? "Payer avec K-Pay" : "Obtenir mes billets"}
               </button>
-              <p className="text-center text-xs text-gray-400">
-                Paiement simulé pour cette version de démonstration (intégration Stripe / Mobile Money en phase 2).
-              </p>
+              {total > 0 && (
+                <p className="text-center text-xs text-gray-400">
+                  Paiement sécurisé via K-Pay (Mobile Money MTN/Airtel ou carte bancaire). Tu seras redirigé(e) vers la page de paiement.
+                </p>
+              )}
             </form>
           </div>
         </div>
@@ -433,129 +501,3 @@ export function PublicEventClient({ slug }: { slug: string }) {
   );
 }
 
-function TicketCard({
-  ticket,
-  event,
-  brandColor,
-}: {
-  ticket: PurchasedTicket;
-  event: EventRecord;
-  brandColor: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [downloading, setDownloading] = useState<"image" | "pdf" | null>(null);
-
-  async function buildTicketCanvas(): Promise<HTMLCanvasElement> {
-    const canvas = document.createElement("canvas");
-    const width = 800;
-    const height = 380;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, width, 90);
-
-    ctx.fillStyle = brandColor;
-    ctx.font = "bold 14px Arial";
-    ctx.fillText("EVENTPRO — BILLET ÉLECTRONIQUE", 32, 34);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText(event.name, 32, 68);
-
-    ctx.fillStyle = "#1e293b";
-    ctx.font = "bold 16px Arial";
-    ctx.fillText(ticket.category, 32, 130);
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#64748b";
-    if (event.event_date) {
-      ctx.fillText(new Date(event.event_date).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" }), 32, 155);
-    }
-    if (event.location) {
-      ctx.fillText(event.location, 32, 178);
-    }
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 18px monospace";
-    ctx.fillText(ticket.ticket_number, 32, 230);
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "12px Arial";
-    ctx.fillText("Présente ce QR code à l'entrée", 32, 254);
-
-    if (ticket.qrDataUrl) {
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("qr_load_failed"));
-        img.src = ticket.qrDataUrl!;
-      });
-      ctx.drawImage(img, width - 250, 60, 190, 190);
-    }
-
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(width - 270, 20);
-    ctx.lineTo(width - 270, height - 20);
-    ctx.stroke();
-
-    return canvas;
-  }
-
-  async function handleDownloadImage() {
-    setDownloading("image");
-    try {
-      const canvas = await buildTicketCanvas();
-      const url = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `billet-${ticket.ticket_number}.png`;
-      link.click();
-    } finally {
-      setDownloading(null);
-    }
-  }
-
-  async function handleDownloadPdf() {
-    setDownloading("pdf");
-    try {
-      const canvas = await buildTicketCanvas();
-      const imgData = canvas.toDataURL("image/png");
-      const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: [canvas.width, canvas.height] });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`billet-${ticket.ticket_number}.pdf`);
-    } finally {
-      setDownloading(null);
-    }
-  }
-
-  return (
-    <div className="card">
-      <div className="flex items-center gap-4">
-        {ticket.qrDataUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={ticket.qrDataUrl} alt="QR code" className="h-28 w-28" />
-        )}
-        <div>
-          <p className="text-xs uppercase font-semibold" style={{ color: brandColor }}>{ticket.category}</p>
-          <p className="font-mono text-sm text-gray-700">{ticket.ticket_number}</p>
-          <p className="mt-1 text-xs text-gray-400">Présente ce QR code à l'entrée</p>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={handleDownloadImage} disabled={downloading !== null} className="btn-secondary py-1.5 px-3 text-[11px]">
-          <Download className="w-3.5 h-3.5" />
-          <span>{downloading === "image" ? "..." : "Télécharger (image)"}</span>
-        </button>
-        <button type="button" onClick={handleDownloadPdf} disabled={downloading !== null} className="btn-secondary py-1.5 px-3 text-[11px]">
-          <FileDown className="w-3.5 h-3.5" />
-          <span>{downloading === "pdf" ? "..." : "Télécharger (PDF)"}</span>
-        </button>
-      </div>
-      <canvas ref={canvasRef} className="hidden" />
-    </div>
-  );
-}
