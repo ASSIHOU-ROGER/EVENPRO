@@ -1,30 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyKpayWebhookSignature } from "@/lib/kpay";
 import { verifyAndFinalizeKpayOrder } from "@/lib/paymentFinalize";
 
-// Endpoint "URL de callback dépôts" à configurer dans le tableau de bord K-Pay
-// (Développeurs > Webhooks). K-Pay y envoie le statut d'un paiement entrant.
-//
-// Important : on ne fait JAMAIS confiance directement au corps de cette requête pour
-// marquer une commande payée (K-Pay ne signe pas ses webhooks à ce jour) — on l'utilise
-// uniquement pour savoir QUELLE commande revérifier, puis on interroge K-Pay nous-mêmes
-// via l'API `checkstatus` (voir lib/paymentFinalize.ts) avant toute décision.
+// Endpoint "URL de callback dépôts" à configurer dans l'application K-Pay (tableau de bord →
+// Applications → EVEN PRO → Webhooks). K-Pay y envoie le statut d'un paiement entrant
+// (événements payment.completed / payment.failed / payment.cancelled).
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const refid: string | undefined = body?.refid;
-    const tid: string | undefined = body?.tid;
+    const raw = await req.text();
+    const signature = req.headers.get("x-kpay-signature");
 
-    if (!refid) {
-      return NextResponse.json({ reply: "OK", note: "refid manquant, ignoré" });
+    if (!verifyKpayWebhookSignature(raw, signature)) {
+      console.error("[kpay/webhook] signature invalide, requête ignorée.");
+      // On répond quand même 200 pour ne pas révéler d'information ni déclencher des retries.
+      return NextResponse.json({ received: true });
     }
 
-    await verifyAndFinalizeKpayOrder(refid);
+    const event = JSON.parse(raw);
+    const externalId: string | undefined = event?.externalId;
 
-    return NextResponse.json({ tid: tid ?? "", refid, reply: "OK" });
+    if (!externalId) {
+      return NextResponse.json({ received: true });
+    }
+
+    // On ne fait confiance ni au "status" ni au "event" du webhook pour décider quoi que ce soit :
+    // on l'utilise uniquement pour savoir QUELLE commande revérifier auprès de K-Pay directement
+    // (voir lib/paymentFinalize.ts).
+    await verifyAndFinalizeKpayOrder(externalId);
+
+    return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error("[kpay/webhook] erreur:", err);
-    // On répond quand même 200 pour éviter des tentatives de renvoi infinies de la part de
-    // K-Pay ; l'erreur est loguée côté serveur pour investigation.
-    return NextResponse.json({ reply: "OK" });
+    // 200 quand même : erreur déjà loguée, on évite les tentatives de renvoi en boucle.
+    return NextResponse.json({ received: true });
   }
 }

@@ -1,94 +1,92 @@
-// Intégration K-Pay (Esicia, Kigali) — paiement Mobile Money (MTN/Airtel) et carte bancaire.
-// Documentation : https://developers.kpay.africa/documentation.php
+// Intégration K-Pay (kpay.site) — paiement Mobile Money et carte bancaire, Afrique centrale/de l'Ouest.
+// Documentation officielle : https://kpay.site/documentation
 //
-// Flux : on initie un paiement via `pay`, K-Pay renvoie une URL de checkout hébergée vers
-// laquelle on redirige l'acheteur. Une fois le paiement effectué, K-Pay (a) redirige
-// l'acheteur vers `redirecturl` et (b) notifie notre backend via `returl` (webhook).
-// Dans les deux cas, on ne fait jamais confiance à la simple redirection ou au corps du
-// webhook : on revérifie systématiquement le statut auprès de K-Pay via `checkstatus`
-// avant de considérer une commande comme payée (voir verifyAndFinalizeOrder ci-dessous).
+// On utilise le mode GATEWAY (page de paiement hébergée par K-Pay) : plus simple et plus flexible
+// qu'un mode USSD par opérateur, puisqu'on ne connaît pas à l'avance l'opérateur Mobile Money de
+// chaque acheteur. K-Pay héberge la page, l'acheteur y saisit lui-même son numéro/opérateur ou sa
+// carte, puis est redirigé vers `returnUrl`.
+//
+// Sécurité : on ne fait jamais confiance à la redirection ni au corps du webhook pour marquer une
+// commande payée — on revérifie systématiquement via GET /api/v1/payments/:id (voir paymentFinalize.ts),
+// conformément à la "règle d'or" documentée par K-Pay.
 
-const KPAY_BASE_URL = "https://pay.esicia.com/";
+const KPAY_BASE_URL = "https://admin.kpay.site";
 
 function authHeaders() {
   const apiKey = process.env.KPAY_API_KEY;
-  const username = process.env.KPAY_USERNAME;
-  const password = process.env.KPAY_PASSWORD;
-  if (!apiKey || !username || !password) {
-    throw new Error("Configuration K-Pay incomplète (KPAY_API_KEY / KPAY_USERNAME / KPAY_PASSWORD manquants).");
+  const secretKey = process.env.KPAY_SECRET_KEY;
+  if (!apiKey || !secretKey) {
+    throw new Error("Configuration K-Pay incomplète (KPAY_API_KEY / KPAY_SECRET_KEY manquants).");
   }
   return {
     "Content-Type": "application/json",
-    "Kpay-Key": apiKey,
-    Authorization: "Basic " + Buffer.from(`${username}:${password}`).toString("base64"),
+    "X-API-Key": apiKey,
+    "X-Secret-Key": secretKey,
   };
 }
 
 export interface KpayInitiateParams {
-  refid: string;
   amount: number;
-  msisdn: string;
-  email: string;
-  cname: string;
-  details: string;
-  pmethod: "momo" | "cc" | "spenn";
+  externalId: string;
   returnUrl: string;
-  redirectUrl: string;
+  cancelUrl?: string;
+  description?: string;
 }
 
 export interface KpayInitiateResult {
   success: boolean;
-  url?: string;
-  tid?: string;
-  reply?: string;
-  retcode?: number;
+  id?: string;
+  gatewayUrl?: string;
+  status?: string;
+  message?: string;
 }
 
 export async function initiateKpayPayment(params: KpayInitiateParams): Promise<KpayInitiateResult> {
-  const retailerId = process.env.KPAY_RETAILER_ID;
-  if (!retailerId) throw new Error("KPAY_RETAILER_ID manquant côté serveur.");
-
-  const res = await fetch(KPAY_BASE_URL, {
+  const res = await fetch(`${KPAY_BASE_URL}/api/v1/payments/init`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({
-      action: "pay",
-      msisdn: params.msisdn,
-      email: params.email,
-      details: params.details,
-      refid: params.refid,
       amount: Math.round(params.amount),
-      currency: "RWF",
-      cname: params.cname,
-      cnumber: params.refid,
-      pmethod: params.pmethod,
-      retailerid: retailerId,
-      returl: params.returnUrl,
-      redirecturl: params.redirectUrl,
+      externalId: params.externalId,
+      returnUrl: params.returnUrl,
+      cancelUrl: params.cancelUrl,
+      description: params.description,
     }),
   });
   const data = await res.json();
-  return {
-    success: data.success === 1,
-    url: data.url,
-    tid: data.tid,
-    reply: data.reply,
-    retcode: data.retcode,
-  };
+  if (!res.ok) {
+    return { success: false, message: data.message || "Erreur K-Pay inconnue." };
+  }
+  return { success: true, id: data.id, gatewayUrl: data.gatewayUrl, status: data.status, message: data.message };
 }
 
-export interface KpayStatusResult {
-  statusid: "01" | "02" | "03" | string;
-  statusdesc?: string;
-  momtransactionid?: string;
-  tid?: string;
+export interface KpayPaymentStatus {
+  id: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED" | string;
+  amount: number;
+  currency: string;
+  externalId?: string;
+  failureReason?: string | null;
 }
 
-export async function checkKpayStatus(refid: string): Promise<KpayStatusResult> {
-  const res = await fetch(KPAY_BASE_URL, {
-    method: "POST",
+export async function getKpayPayment(paymentId: string): Promise<KpayPaymentStatus> {
+  const res = await fetch(`${KPAY_BASE_URL}/api/v1/payments/${paymentId}`, {
+    method: "GET",
     headers: authHeaders(),
-    body: JSON.stringify({ action: "checkstatus", refid }),
   });
+  if (!res.ok) {
+    throw new Error(`Impossible de récupérer le paiement K-Pay ${paymentId} (HTTP ${res.status}).`);
+  }
   return res.json();
+}
+
+// Vérifie la signature HMAC-SHA256 d'un webhook K-Pay, calculée sur le corps JSON brut.
+export function verifyKpayWebhookSignature(rawBody: string, signature: string | null): boolean {
+  if (!signature) return false;
+  const secretKey = process.env.KPAY_SECRET_KEY;
+  if (!secretKey) return false;
+  const crypto = require("crypto") as typeof import("crypto");
+  const expected = crypto.createHmac("sha256", secretKey).update(rawBody).digest("hex");
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }

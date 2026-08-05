@@ -104,55 +104,61 @@ RESEND_FROM_EMAIL=EventPro <onboarding@resend.dev>
   serveur) — voir "Emails" ci-dessous pour l'activer réellement.
 
 ## Paiement réel (K-Pay)
-Les billets payants passent désormais par **K-Pay** (Esicia, Kigali — Mobile Money MTN/Airtel,
-Visa/Mastercard/Amex). Les billets **gratuits** continuent d'être émis instantanément sans passer
-par K-Pay.
+Les billets payants passent désormais par **K-Pay** ([kpay.site](https://kpay.site) — Mobile Money
+et carte bancaire, plusieurs pays d'Afrique centrale/de l'Ouest). Les billets **gratuits**
+continuent d'être émis instantanément sans passer par K-Pay. Application K-Pay utilisée : **EVEN
+PRO** (id `1c3764a7-d137-47f4-a450-6623b98e4b23`).
 
 ### Comment ça marche
 1. L'acheteur choisit ses billets et clique sur "Payer avec K-Pay" → une commande `pending` est
    créée côté serveur (le quota est réservé, aucun billet n'est encore émis).
-2. Il est redirigé vers la page de paiement hébergée par K-Pay (Mobile Money ou carte, selon son
-   choix).
+2. Il est redirigé vers la page de paiement hébergée par K-Pay (mode *GATEWAY* : l'acheteur y
+   choisit lui-même son opérateur Mobile Money ou sa carte).
 3. Une fois le paiement effectué, K-Pay le redirige vers `/paiement/retour?order=<id>` **et**
-   notifie notre serveur en tâche de fond (webhook).
-4. Dans les deux cas, notre serveur revérifie lui-même le statut auprès de K-Pay (`checkstatus`)
-   avant d'émettre les billets — on ne fait jamais confiance à une simple redirection ou au corps
-   d'un webhook pour éviter toute fraude. Les billets (QR codes) ne sont générés qu'à ce moment-là,
-   et un email de confirmation est envoyé.
+   notifie notre serveur en tâche de fond (webhook signé).
+4. Dans les deux cas, notre serveur revérifie lui-même le statut auprès de K-Pay
+   (`GET /api/v1/payments/:id`) avant d'émettre les billets — on ne fait jamais confiance à une
+   simple redirection ou au corps d'un webhook pour éviter toute fraude (c'est la "règle d'or"
+   documentée par K-Pay elle-même). Les billets (QR codes) ne sont générés qu'à ce moment-là, et un
+   email de confirmation est envoyé.
 5. Les commandes `pending` non payées après 30 minutes sont automatiquement libérées (le quota
    redevient disponible) au prochain achat sur l'événement.
 
 ### Configuration
 Dans `.env.local` (et dans les variables d'environnement Vercel pour la prod) :
 ```
-KPAY_API_KEY=...
-KPAY_USERNAME=...
-KPAY_PASSWORD=...
-KPAY_RETAILER_ID=...
+KPAY_API_KEY=kpay_test_...
+KPAY_SECRET_KEY=...
 PAYMENT_INTERNAL_SECRET=f81c5323b89667b93f3f2ba96c821ada2cfa59b8da5cab09
 ```
-`PAYMENT_INTERNAL_SECRET` ne doit **pas** être modifié : il doit correspondre exactement à la
-valeur stockée dans la table `app_secrets` (clé `payment_secret`) en base — c'est ce qui protège
-les fonctions de finalisation de paiement contre un appel direct non autorisé.
+`KPAY_API_KEY` / `KPAY_SECRET_KEY` sont les clés générées depuis l'application K-Pay "EVEN PRO"
+(préfixe `kpay_test_` en sandbox, `kpay_live_` une fois le KYC validé — bascule automatique selon
+la clé utilisée, l'URL de l'API ne change pas). `PAYMENT_INTERNAL_SECRET` ne doit **pas** être
+modifié : il doit correspondre exactement à la valeur stockée dans la table `app_secrets` (clé
+`payment_secret`) en base — c'est ce qui protège les fonctions de finalisation de paiement contre
+un appel direct non autorisé.
 
-### URLs à renseigner dans le tableau de bord K-Pay
-Sur la page "URLs de callback (Webhooks)" du tableau de bord K-Pay :
+### URLs à renseigner dans l'application K-Pay
+Sur la page "Webhooks" de l'application "EVEN PRO" (jusqu'à 4 URLs de callback configurables) :
 - **URL de callback dépôts** : `https://<ton-domaine>/api/payments/kpay/webhook` — c'est celle-ci
-  qui compte, les achats de billets sont des paiements entrants (dépôts). En production, avec le
-  domaine Vercel actuel, c'est `https://eventpro-nu.vercel.app/api/payments/kpay/webhook`.
+  qui compte, les achats de billets sont des paiements entrants (`payment.*`). En production, avec
+  le domaine Vercel actuel, c'est `https://eventpro-nu.vercel.app/api/payments/kpay/webhook`.
 - **URL de callback générique** : la même URL (sert de filet de sécurité si un type d'événement
-  n'a pas d'URL spécifique).
+  n'a pas d'URL spécifique définie).
 - **URL de callback retraits** et **remboursements** : laisser vide — l'app ne fait pas de
   décaissement automatique ni de remboursement via l'API K-Pay pour l'instant (l'annulation de
   commande reste une opération interne, sans remboursement réel déclenché — voir plus haut).
 
-Cette URL ne peut pas être testée en local (K-Pay doit pouvoir l'atteindre depuis internet) ; en
-développement, la page `/paiement/retour` revérifie elle-même le statut au chargement, donc le
-flux fonctionne même sans webhook joignable.
+K-Pay signe chaque webhook (en-tête `X-KPAY-Signature`, HMAC-SHA256 sur le corps brut avec
+`KPAY_SECRET_KEY`) — notre route vérifie cette signature avant tout traitement. Cette URL ne peut
+pas être testée en local (K-Pay doit pouvoir l'atteindre depuis internet) ; en développement, la
+page `/paiement/retour` revérifie elle-même le statut au chargement, donc le flux fonctionne même
+sans webhook joignable.
 
 ### Devise
-K-Pay ne traite que le **RWF** (Franc rwandais) actuellement. Les prix des catégories de billets
-destinées à un paiement réel doivent donc être saisis en RWF.
+K-Pay facture en **XAF** (et selon l'opérateur choisi par l'acheteur, potentiellement XOF, KES,
+ZMW...). Les prix des catégories de billets destinées à un paiement réel doivent donc être saisis
+dans la devise attendue par K-Pay pour le pays ciblé (XAF par défaut).
 
 ## Prochaines étapes (non incluses)
 - Gestion des bénévoles, création de site web événement dédié en un clic (au-delà de la page

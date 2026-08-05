@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord, TicketCategoryRecord, SponsorRecord, ProgramSessionRecord, OrganizationRecord } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
-import { Calendar, MapPin, ChevronDown, Ticket, Minus, Plus, Smartphone, CreditCard } from "lucide-react";
+import { Calendar, MapPin, ChevronDown, Ticket, Minus, Plus } from "lucide-react";
 import { TicketCard, type PurchasedTicket } from "@/components/public/TicketCard";
 
 export function PublicEventClient({ slug }: { slug: string }) {
@@ -22,7 +22,6 @@ export function PublicEventClient({ slug }: { slug: string }) {
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
-  const [pmethod, setPmethod] = useState<"momo" | "cc">("momo");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<{
@@ -141,7 +140,6 @@ export function PublicEventClient({ slug }: { slug: string }) {
           buyerEmail,
           buyerPhone,
           items,
-          pmethod,
         }),
       });
       const data = await res.json();
@@ -314,45 +312,14 @@ export function PublicEventClient({ slug }: { slug: string }) {
                 <input type="email" className="input" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} required />
               </div>
               <div>
-                <label className="label">Téléphone {total > 0 && "(avec indicatif pays, ex. 250783000000)"}</label>
+                <label className="label">Téléphone</label>
                 <input
                   className="input"
                   value={buyerPhone}
                   onChange={(e) => setBuyerPhone(e.target.value)}
-                  placeholder={total > 0 ? "250783000000" : undefined}
                   required={total > 0}
                 />
               </div>
-
-              {total > 0 && (
-                <div>
-                  <label className="label">Mode de paiement</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPmethod("momo")}
-                      className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                        pmethod === "momo" ? "border-transparent text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                      }`}
-                      style={pmethod === "momo" ? { backgroundColor: brandColor } : undefined}
-                    >
-                      <Smartphone className="h-4 w-4" />
-                      Mobile Money
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPmethod("cc")}
-                      className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                        pmethod === "cc" ? "border-transparent text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                      }`}
-                      style={pmethod === "cc" ? { backgroundColor: brandColor } : undefined}
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      Carte bancaire
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                 <span className="text-sm text-gray-500">{totalItems} billet(s)</span>
@@ -369,7 +336,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
               </button>
               {total > 0 && (
                 <p className="text-center text-xs text-gray-400">
-                  Paiement sécurisé via K-Pay (Mobile Money MTN/Airtel ou carte bancaire). Tu seras redirigé(e) vers la page de paiement.
+                  Paiement sécurisé via K-Pay (Mobile Money ou carte bancaire). Tu seras redirigé(e) vers la page de paiement pour choisir ton opérateur.
                 </p>
               )}
             </form>
