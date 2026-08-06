@@ -141,14 +141,17 @@ Dans `.env.local` (et dans les variables d'environnement Vercel pour la prod) :
 ```
 KPAY_API_KEY=kpay_test_...
 KPAY_SECRET_KEY=...
+KPAY_WEBHOOK_SECRET=...
 PAYMENT_INTERNAL_SECRET=f81c5323b89667b93f3f2ba96c821ada2cfa59b8da5cab09
 ```
 `KPAY_API_KEY` / `KPAY_SECRET_KEY` sont les clés générées depuis l'application K-Pay "EVEN PRO"
 (préfixe `kpay_test_` en sandbox, `kpay_live_` une fois le KYC validé — bascule automatique selon
-la clé utilisée, l'URL de l'API ne change pas). `PAYMENT_INTERNAL_SECRET` ne doit **pas** être
-modifié : il doit correspondre exactement à la valeur stockée dans la table `app_secrets` (clé
-`payment_secret`) en base — c'est ce qui protège les fonctions de finalisation de paiement contre
-un appel direct non autorisé.
+la clé utilisée, l'URL de l'API ne change pas). `KPAY_WEBHOOK_SECRET` est le secret affiché par
+K-Pay sur la page de configuration du webhook (distinct de `KPAY_SECRET_KEY`) — c'est lui qui sert
+à vérifier la signature des notifications reçues sur `/api/payments/kpay/webhook`.
+`PAYMENT_INTERNAL_SECRET` ne doit **pas** être modifié : il doit correspondre exactement à la
+valeur stockée dans la table `app_secrets` (clé `payment_secret`) en base — c'est ce qui protège
+les fonctions de finalisation de paiement contre un appel direct non autorisé.
 
 ### URLs à renseigner dans l'application K-Pay
 Sur la page "Webhooks" de l'application "EVEN PRO" (jusqu'à 4 URLs de callback configurables) :

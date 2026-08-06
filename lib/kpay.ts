@@ -81,9 +81,11 @@ export async function getKpayPayment(paymentId: string): Promise<KpayPaymentStat
 }
 
 // Vérifie la signature HMAC-SHA256 d'un webhook K-Pay, calculée sur le corps JSON brut.
+// Utilise le secret dédié au webhook (généré par K-Pay sur la page de config du endpoint,
+// distinct de KPAY_SECRET_KEY) — c'est celui-là qui signe réellement les notifications reçues.
 export function verifyKpayWebhookSignature(rawBody: string, signature: string | null): boolean {
   if (!signature) return false;
-  const secretKey = process.env.KPAY_SECRET_KEY;
+  const secretKey = process.env.KPAY_WEBHOOK_SECRET || process.env.KPAY_SECRET_KEY;
   if (!secretKey) return false;
   const crypto = require("crypto") as typeof import("crypto");
   const expected = crypto.createHmac("sha256", secretKey).update(rawBody).digest("hex");
