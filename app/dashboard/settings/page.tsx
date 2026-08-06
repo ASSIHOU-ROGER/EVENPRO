@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Palette, Image as ImageIcon, Save } from "lucide-react";
+import Link from "next/link";
+import { Palette, Image as ImageIcon, Save, Moon } from "lucide-react";
 import { useUser } from "@/lib/useUser";
+import { useTheme } from "@/lib/theme";
 import { createClient } from "@/lib/supabase/client";
 import type { OrganizationRecord } from "@/lib/types";
 
@@ -9,6 +11,7 @@ const PRESET_COLORS = ["#2563eb", "#0f172a", "#059669", "#dc2626", "#7c3aed", "#
 
 export default function SettingsPage() {
   const { user } = useUser();
+  const { darkMode, toggleDarkMode } = useTheme();
   const [org, setOrg] = useState<OrganizationRecord | null>(null);
   const [name, setName] = useState("");
   const [brandColor, setBrandColor] = useState("#2563eb");
@@ -83,7 +86,13 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-2xl font-bold text-navy">Marque de l'organisation</h1>
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour au tableau de bord
+      </Link>
+      <h1 className="mb-1 text-2xl font-bold text-navy dark:text-white">Marque de l'organisation</h1>
       <p className="mb-6 text-sm text-gray-500">
         Personnalise le logo et la couleur affichés sur tes pages d'événements publiques.
       </p>
@@ -149,6 +158,31 @@ export default function SettingsPage() {
           <span>{saving ? "Enregistrement..." : "Enregistrer"}</span>
         </button>
       </form>
+
+      <div className="card mt-6">
+        <h2 className="mb-1 text-lg font-bold text-navy dark:text-white flex items-center gap-1.5">
+          <Moon className="w-4 h-4" /> Affichage
+        </h2>
+        <p className="mb-4 text-sm text-gray-500 dark:text-slate-400">
+          Le mode nuit s'applique à ton tableau de bord et reste actif la prochaine fois que tu te connectes.
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Mode nuit</span>
+          <button
+            type="button"
+            onClick={toggleDarkMode}
+            role="switch"
+            aria-checked={darkMode}
+            className={`relative h-7 w-12 rounded-full transition-colors ${darkMode ? "bg-gold" : "bg-slate-200"}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${
+                darkMode ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

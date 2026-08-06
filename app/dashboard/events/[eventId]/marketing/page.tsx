@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord } from "@/lib/types";
@@ -126,14 +127,20 @@ export default function MarketingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-navy">Marketing IA</h1>
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
+      <h1 className="text-2xl font-bold text-navy dark:text-white">Marketing IA</h1>
       <p className="text-sm text-gray-500">
         Génère automatiquement des publications et une affiche pour {event?.name}. Nécessite une clé GEMINI_API_KEY
         configurée côté serveur.
       </p>
 
       <div className="card">
-        <h2 className="mb-4 text-lg font-bold text-navy">Publication réseaux sociaux</h2>
+        <h2 className="mb-4 text-lg font-bold text-navy dark:text-white">Publication réseaux sociaux</h2>
         <div className="mb-3 flex gap-2">
           <button
             className={platform === "facebook" ? "btn-primary" : "btn-secondary"}
@@ -168,7 +175,7 @@ export default function MarketingPage() {
       </div>
 
       <div className="card">
-        <h2 className="mb-4 text-lg font-bold text-navy">Affiche promotionnelle</h2>
+        <h2 className="mb-4 text-lg font-bold text-navy dark:text-white">Affiche promotionnelle</h2>
         <div className="mb-3 flex gap-2">
           <input className="input" value={style} onChange={(e) => setStyle(e.target.value)} placeholder="Style souhaité" />
           <button onClick={generatePoster} className="btn-gold whitespace-nowrap" disabled={posterLoading}>

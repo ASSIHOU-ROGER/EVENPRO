@@ -18,12 +18,12 @@ export default function Navbar() {
 
   return (
     <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-      <nav className="flex items-center justify-between h-16 bg-white/80 backdrop-blur-md px-6 rounded-full border border-slate-100 shadow-sm">
+      <nav className="flex items-center justify-between h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300">
+          <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-slate-100 flex items-center justify-center text-white dark:text-slate-900 shadow-md group-hover:scale-105 transition-transform duration-300">
             <Ticket className="w-5 h-5 text-gold" />
           </div>
-          <span className="font-display font-bold text-lg tracking-wider text-slate-900 leading-none">
+          <span className="font-display font-bold text-lg tracking-wider text-slate-900 dark:text-white leading-none">
             EVENT<span className="text-gold">PRO</span>
           </span>
         </Link>
@@ -33,7 +33,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/dashboard"
-                className="text-xs font-bold tracking-widest uppercase text-slate-500 hover:text-slate-900 transition-colors"
+                className="text-xs font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 Tableau de bord
               </Link>
@@ -46,7 +46,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-xs font-bold tracking-widest uppercase text-slate-500 hover:text-slate-900 transition-colors"
+                className="text-xs font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 Connexion
               </Link>

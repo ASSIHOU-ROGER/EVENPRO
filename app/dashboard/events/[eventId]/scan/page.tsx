@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -197,8 +198,14 @@ export default function ScanPage() {
 
   return (
     <div className="mx-auto max-w-lg">
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-navy">Scanner de contrôle</h1>
+        <h1 className="text-2xl font-bold text-navy dark:text-white">Scanner de contrôle</h1>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
             isOnline ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"

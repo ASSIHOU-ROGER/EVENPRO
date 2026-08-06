@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SponsorRecord } from "@/lib/types";
@@ -116,11 +117,17 @@ export default function SponsorsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Sponsors & exposants</h1>
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sponsors & exposants</h1>
 
       <div className="card">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">{editingId ? "Modifier" : "Ajouter"}</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingId ? "Modifier" : "Ajouter"}</h2>
           {editingId && (
             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
@@ -163,7 +170,7 @@ export default function SponsorsPage() {
 
       {[{ label: "Sponsors", data: sponsors }, { label: "Exposants", data: exhibitors }].map((group) => (
         <div key={group.label} className="card">
-          <h2 className="mb-4 text-lg font-bold text-slate-900">{group.label}</h2>
+          <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">{group.label}</h2>
           {group.data.length === 0 ? (
             <p className="text-gray-400">Aucun pour l'instant.</p>
           ) : (
@@ -176,7 +183,7 @@ export default function SponsorsPage() {
                       <img src={s.logo_url} alt={s.name} className="h-10 w-10 rounded object-contain" />
                     )}
                     <div>
-                      <p className="font-semibold text-slate-900">{s.name}</p>
+                      <p className="font-semibold text-slate-900 dark:text-white">{s.name}</p>
                       {s.level && <p className="text-xs text-gray-500">{s.level}</p>}
                     </div>
                   </div>

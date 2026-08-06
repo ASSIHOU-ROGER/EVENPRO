@@ -190,12 +190,18 @@ export default function ManageEventPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour au tableau de bord
+      </Link>
       <div className="card">
         {!editing ? (
           <>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">{event.name}</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{event.name}</h1>
                 <p className="text-sm text-gray-500">{event.location}</p>
                 {event.event_date && (
                   <p className="text-sm text-gray-500">
@@ -236,7 +242,7 @@ export default function ManageEventPage() {
         ) : (
           <form onSubmit={saveEdit} className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Modifier l'événement</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Modifier l'événement</h2>
               <button type="button" onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
@@ -338,7 +344,7 @@ export default function ManageEventPage() {
       </div>
 
       <div className="card">
-        <h2 className="mb-4 text-lg font-bold text-slate-900">Catégories de billets</h2>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Catégories de billets</h2>
         {categories.length > 0 && (
           <table className="mb-6 w-full text-sm">
             <thead>

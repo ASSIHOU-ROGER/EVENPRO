@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord } from "@/lib/types";
@@ -58,9 +59,15 @@ export default function BadgesPage() {
 
   return (
     <div>
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="no-print mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
       <div className="no-print mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy">Badges — {event?.name}</h1>
+          <h1 className="text-2xl font-bold text-navy dark:text-white">Badges — {event?.name}</h1>
           <p className="text-sm text-gray-500">{visibleTickets.length} badge(s)</p>
         </div>
         <div className="flex items-center gap-3">
@@ -88,7 +95,7 @@ export default function BadgesPage() {
               )}
             </div>
             <div>
-              <p className="text-lg font-bold text-navy">{t.holder_name}</p>
+              <p className="text-lg font-bold text-navy dark:text-white">{t.holder_name}</p>
               <p className="text-xs uppercase text-gray-500">{t.category_name}</p>
               <p className="mt-1 font-mono text-xs text-gray-400">{t.ticket_number}</p>
             </div>

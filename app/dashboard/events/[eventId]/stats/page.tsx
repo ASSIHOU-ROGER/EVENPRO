@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { TicketCategoryRecord } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
@@ -69,14 +70,20 @@ export default function StatsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-navy">Statistiques</h1>
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
+      <h1 className="text-2xl font-bold text-navy dark:text-white">Statistiques</h1>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card flex items-center gap-4">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold/10 text-gold">
             <Ticket className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-navy">{totalSold}</p>
+            <p className="text-2xl font-extrabold text-navy dark:text-white">{totalSold}</p>
             <p className="text-xs text-slate-500">Billets vendus</p>
           </div>
         </div>
@@ -85,7 +92,7 @@ export default function StatsPage() {
             <Wallet className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-navy">{revenue.toFixed(0)}</p>
+            <p className="text-2xl font-extrabold text-navy dark:text-white">{revenue.toFixed(0)}</p>
             <p className="text-xs text-slate-500">Chiffre d'affaires ({currency})</p>
           </div>
         </div>
@@ -94,7 +101,7 @@ export default function StatsPage() {
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-navy">{totalQuota > 0 ? totalQuota - totalSold : "∞"}</p>
+            <p className="text-2xl font-extrabold text-navy dark:text-white">{totalQuota > 0 ? totalQuota - totalSold : "∞"}</p>
             <p className="text-xs text-slate-500">Billets restants</p>
           </div>
         </div>
@@ -103,14 +110,14 @@ export default function StatsPage() {
             <Gauge className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-navy">{fillRate !== null ? `${fillRate}%` : "—"}</p>
+            <p className="text-2xl font-extrabold text-navy dark:text-white">{fillRate !== null ? `${fillRate}%` : "—"}</p>
             <p className="text-xs text-slate-500">Taux de remplissage</p>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <h2 className="mb-4 text-lg font-bold text-navy">Ventes par catégorie</h2>
+        <h2 className="mb-4 text-lg font-bold text-navy dark:text-white">Ventes par catégorie</h2>
         {categories.length === 0 ? (
           <p className="text-gray-400">Aucune catégorie.</p>
         ) : (
@@ -134,7 +141,7 @@ export default function StatsPage() {
       </div>
 
       <div className="card">
-        <h2 className="mb-1 text-lg font-bold text-navy">Courbe des ventes</h2>
+        <h2 className="mb-1 text-lg font-bold text-navy dark:text-white">Courbe des ventes</h2>
         <p className="mb-4 text-xs text-slate-400">Commandes par jour</p>
         {!chart ? (
           <p className="text-gray-400">Pas encore de ventes.</p>

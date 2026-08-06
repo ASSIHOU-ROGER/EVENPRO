@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -105,8 +106,14 @@ export default function ParticipantsPage() {
 
   return (
     <div>
+      <Link
+        href={`/dashboard/events/${eventId}`}
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
+      >
+        ← Retour à la gestion de l'événement
+      </Link>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Participants ({totalCount})</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Participants ({totalCount})</h1>
         <div className="flex gap-2">
           <input className="input" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <button onClick={exportCsv} className="btn-secondary whitespace-nowrap">Export CSV (page)</button>

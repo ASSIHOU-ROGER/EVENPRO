@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase text-gray-400">Organisation</p>
-            <h1 className="text-lg font-bold text-navy">{orgName ?? "..."}</h1>
+            <h1 className="text-lg font-bold text-navy dark:text-white">{orgName ?? "..."}</h1>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/dashboard/settings" className="btn-secondary">

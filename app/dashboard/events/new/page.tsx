@@ -111,7 +111,7 @@ export default function NewEventPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold text-navy">Créer un événement</h1>
+      <h1 className="mb-6 text-2xl font-bold text-navy dark:text-white">Créer un événement</h1>
       <form onSubmit={handleSubmit} className="card space-y-4">
         <div>
           <label className="label">Nom de l'événement</label>

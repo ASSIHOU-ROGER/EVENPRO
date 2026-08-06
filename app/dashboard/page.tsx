@@ -124,7 +124,7 @@ export default function DashboardHome() {
             <CalendarCheck className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-slate-900">{publishedCount}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{publishedCount}</p>
             <p className="text-xs text-slate-500">Événements publiés</p>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function DashboardHome() {
             <Ticket className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-slate-900">{totalTicketsSold}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalTicketsSold}</p>
             <p className="text-xs text-slate-500">Billets vendus</p>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function DashboardHome() {
             <Wallet className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-slate-900">{revenue.toFixed(0)}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{revenue.toFixed(0)}</p>
             <p className="text-xs text-slate-500">Chiffre d'affaires ({ordersCount} commandes)</p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function DashboardHome() {
             <TrendingUp className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-2xl font-extrabold text-slate-900">{events.length}</p>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{events.length}</p>
             <p className="text-xs text-slate-500">Événements au total</p>
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function DashboardHome() {
                     <span className="text-xs text-slate-400">{progress.sold} billet(s) vendu(s)</span>
                   )}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">{ev.name}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{ev.name}</h3>
                 {ev.event_date && (
                   <p className="mt-1 text-sm text-gray-500">
                     {new Date(ev.event_date).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
