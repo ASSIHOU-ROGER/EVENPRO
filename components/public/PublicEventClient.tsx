@@ -323,7 +323,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
 
               <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                 <span className="text-sm text-gray-500">{totalItems} billet(s)</span>
-                <span className="text-lg font-bold text-navy">{total.toFixed(2)} {categories[0]?.currency || "EUR"}</span>
+                <span className="text-lg font-bold text-navy">{total.toFixed(2)} {categories[0]?.currency || "FCFA"}</span>
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button

@@ -54,13 +54,25 @@ npm run dev
 
 `.env.local` est déjà configuré (Supabase, `CRON_SECRET`, `GEMINI_API_KEY`).
 
-### Emails (Resend, optionnel)
-Sans clé, les emails (confirmation, rappel, remerciement) sont simplement loggués. Pour les
-activer : compte gratuit sur https://resend.com, puis dans `.env.local` :
-```
-RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM_EMAIL=EventPro <onboarding@resend.dev>
-```
+### Emails (Brevo ou Resend, optionnel)
+Sans clé, les emails (confirmation, rappel, remerciement) sont simplement loggués. Deux
+fournisseurs sont supportés — configure l'un des deux (Brevo est utilisé en priorité si les deux
+clés sont présentes) :
+
+- **Brevo** (recommandé — 300 emails/jour gratuits à vie, sans carte bancaire) : compte gratuit sur
+  https://www.brevo.com, puis Dashboard → SMTP & API → API Keys → créer une clé. Dans `.env.local` :
+  ```
+  BREVO_API_KEY=xkeysib-xxxxxxxx
+  EMAIL_FROM_ADDRESS=ton-adresse@exemple.com
+  EMAIL_FROM_NAME=EventPro
+  ```
+  L'adresse d'envoi doit être ajoutée comme expéditeur vérifié dans Brevo (Dashboard → Expéditeurs,
+  domaines & dédiés → Expéditeurs) avant de pouvoir l'utiliser.
+- **Resend** : compte gratuit sur https://resend.com, puis dans `.env.local` :
+  ```
+  RESEND_API_KEY=re_xxxxxxxx
+  RESEND_FROM_EMAIL=EventPro <onboarding@resend.dev>
+  ```
 
 ### Rappels/remerciements automatiques
 - **Vercel** : `vercel.json` est déjà configuré (une fois par jour à 8h — le plan Hobby de

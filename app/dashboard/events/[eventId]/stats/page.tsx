@@ -14,7 +14,7 @@ export default function StatsPage() {
   const eventId = params.eventId as string;
   const [categories, setCategories] = useState<TicketCategoryRecord[]>([]);
   const [revenue, setRevenue] = useState(0);
-  const [currency, setCurrency] = useState("EUR");
+  const [currency, setCurrency] = useState("FCFA");
   const [salesByDay, setSalesByDay] = useState<DayPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState<string | null>(null);
