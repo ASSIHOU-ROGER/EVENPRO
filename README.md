@@ -54,12 +54,22 @@ npm run dev
 
 `.env.local` est déjà configuré (Supabase, `CRON_SECRET`, `GEMINI_API_KEY`).
 
-### Emails (Brevo ou Resend, optionnel)
-Sans clé, les emails (confirmation, rappel, remerciement) sont simplement loggués. Deux
-fournisseurs sont supportés — configure l'un des deux (Brevo est utilisé en priorité si les deux
-clés sont présentes) :
+### Emails (Mailjet, Brevo ou Resend, optionnel)
+Sans clé, les emails (confirmation, rappel, remerciement) sont simplement loggués. Trois
+fournisseurs sont supportés — configure l'un des trois (ordre de priorité si plusieurs clés sont
+présentes : Mailjet > Brevo > Resend) :
 
-- **Brevo** (recommandé — 300 emails/jour gratuits à vie, sans carte bancaire) : compte gratuit sur
+- **Mailjet** (actuellement configuré) — compte gratuit sur https://www.mailjet.com, clés sur
+  Account Settings → API Key Management. Dans `.env.local` :
+  ```
+  MAILJET_API_KEY=...
+  MAILJET_SECRET_KEY=...
+  EMAIL_FROM_ADDRESS=ton-adresse@exemple.com
+  EMAIL_FROM_NAME=EventPro
+  ```
+  L'adresse d'envoi doit être un expéditeur vérifié dans Mailjet (Account Settings → Sender
+  addresses & domains) — sinon l'envoi échoue avec une erreur explicite.
+- **Brevo** (300 emails/jour gratuits à vie, sans carte bancaire) : compte gratuit sur
   https://www.brevo.com, puis Dashboard → SMTP & API → API Keys → créer une clé. Dans `.env.local` :
   ```
   BREVO_API_KEY=xkeysib-xxxxxxxx

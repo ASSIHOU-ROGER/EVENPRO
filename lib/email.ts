@@ -1,7 +1,37 @@
-// Deux fournisseurs supportés, au choix selon la clé configurée (Brevo est prioritaire s'il y a
-// les deux) : Brevo (300 emails/jour gratuits, à vie, sans carte bancaire — développeurs.brevo.com)
-// ou Resend. Si aucune clé n'est configurée, l'email est simplement loggué (mode démo).
+// Trois fournisseurs supportés, au choix selon la clé configurée (ordre de priorité si plusieurs
+// sont présentes : Mailjet > Brevo > Resend). Si aucune clé n'est configurée, l'email est
+// simplement loggué (mode démo).
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  const mailjetKey = process.env.MAILJET_API_KEY;
+  const mailjetSecret = process.env.MAILJET_SECRET_KEY;
+  if (mailjetKey && mailjetSecret) {
+    const fromEmail = process.env.EMAIL_FROM_ADDRESS || "onboarding@eventpro.app";
+    const fromName = process.env.EMAIL_FROM_NAME || "EventPro";
+    const res = await fetch("https://api.mailjet.com/v3.1/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Basic " + Buffer.from(`${mailjetKey}:${mailjetSecret}`).toString("base64"),
+      },
+      body: JSON.stringify({
+        Messages: [
+          {
+            From: { Email: fromEmail, Name: fromName },
+            To: [{ Email: to }],
+            Subject: subject,
+            HTMLPart: html,
+          },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`Mailjet a refusé l'envoi (HTTP ${res.status}) : ${errBody}`);
+    }
+    const result = await res.json();
+    return { sent: true, result };
+  }
+
   const brevoKey = process.env.BREVO_API_KEY;
   if (brevoKey) {
     const fromEmail = process.env.EMAIL_FROM_ADDRESS || "onboarding@eventpro.app";
@@ -37,7 +67,7 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
     return { sent: true, result };
   }
 
-  console.log(`[email] Aucune clé BREVO_API_KEY / RESEND_API_KEY configurée — email "${subject}" pour ${to} non envoyé (mode démo).`);
+  console.log(`[email] Aucune clé MAILJET_API_KEY / BREVO_API_KEY / RESEND_API_KEY configurée — email "${subject}" pour ${to} non envoyé (mode démo).`);
   return { sent: false, reason: "no_api_key" };
 }
 
