@@ -180,6 +180,7 @@ export default function ManageEventPage() {
   }
 
   async function deleteCategory(id: string) {
+    if (!confirm("Supprimer cette catégorie de billet ? Cette action est irréversible.")) return;
     const supabase = createClient();
     await supabase.from("ticket_categories").delete().eq("id", id);
     load();
