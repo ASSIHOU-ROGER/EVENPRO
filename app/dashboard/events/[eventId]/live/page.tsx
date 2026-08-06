@@ -175,8 +175,8 @@ export default function LiveDashboardPage() {
 
       <div className="relative no-print mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Link href={`/dashboard/events/${eventId}`} className="text-sm text-gray-300 hover:underline">
-            ← Retour à la gestion
+          <Link href="/dashboard" className="text-sm text-gray-300 hover:underline">
+            ← Retour
           </Link>
           <h1 className="mt-1 text-2xl font-bold">{event?.name ?? "..."}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-400">

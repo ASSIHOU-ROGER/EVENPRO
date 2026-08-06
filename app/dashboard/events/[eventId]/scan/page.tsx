@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -198,12 +199,15 @@ export default function ScanPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <BackLink href="/dashboard" label="Retour" />
+        <Link
+          href={`/dashboard/events/${eventId}/live`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 shadow-sm transition-all hover:border-gold/40 hover:bg-gold/5 hover:text-gold dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+        >
+          Dashboard temps réel
+        </Link>
+      </div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-navy dark:text-white">Scanner de contrôle</h1>
         <span

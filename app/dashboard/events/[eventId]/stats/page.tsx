@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { createClient } from "@/lib/supabase/client";
 import type { TicketCategoryRecord } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
@@ -70,12 +70,7 @@ export default function StatsPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <BackLink href={`/dashboard/events/${eventId}`} label="Retour à la gestion de l'événement" />
       <h1 className="text-2xl font-bold text-navy dark:text-white">Statistiques</h1>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card flex items-center gap-4">

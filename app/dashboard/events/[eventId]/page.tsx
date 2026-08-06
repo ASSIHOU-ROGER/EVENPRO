@@ -2,8 +2,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { Sparkles, Pencil, Trash2, Ban, Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useConfirm } from "@/lib/confirm";
 import type { EventRecord, TicketCategoryRecord, TicketType } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
 
@@ -23,6 +25,7 @@ function toDatetimeLocal(iso: string | null) {
 export default function ManageEventPage() {
   const params = useParams();
   const router = useRouter();
+  const confirmDialog = useConfirm();
   const eventId = params.eventId as string;
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [categories, setCategories] = useState<TicketCategoryRecord[]>([]);
@@ -134,7 +137,12 @@ export default function ManageEventPage() {
 
   async function cancelEvent() {
     if (!event) return;
-    if (!confirm("Annuler cet événement ? Il ne sera plus visible publiquement, mais les données restent consultables.")) return;
+    const ok = await confirmDialog({
+      title: "Annuler cet événement ?",
+      message: "Il ne sera plus visible publiquement, mais les données restent consultables.",
+      confirmLabel: "Annuler l'événement",
+    });
+    if (!ok) return;
     const supabase = createClient();
     await supabase.from("events").update({ status: "cancelled" }).eq("id", event.id);
     load();
@@ -142,8 +150,18 @@ export default function ManageEventPage() {
 
   async function deleteEvent() {
     if (!event) return;
-    if (!confirm("Supprimer définitivement cet événement ? Cette action est irréversible et supprime aussi tous ses billets, commandes et données associées.")) return;
-    if (!confirm("Confirme une dernière fois : suppression DÉFINITIVE, sans retour possible.")) return;
+    const ok1 = await confirmDialog({
+      title: "Supprimer définitivement cet événement ?",
+      message: "Cette action est irréversible et supprime aussi tous ses billets, commandes et données associées.",
+      confirmLabel: "Supprimer",
+    });
+    if (!ok1) return;
+    const ok2 = await confirmDialog({
+      title: "Dernière confirmation",
+      message: "Suppression DÉFINITIVE, sans retour possible. Continuer ?",
+      confirmLabel: "Oui, supprimer définitivement",
+    });
+    if (!ok2) return;
     const supabase = createClient();
     const { error: deleteError } = await supabase.from("events").delete().eq("id", event.id);
     if (deleteError) {
@@ -180,9 +198,22 @@ export default function ManageEventPage() {
   }
 
   async function deleteCategory(id: string) {
-    if (!confirm("Supprimer cette catégorie de billet ? Cette action est irréversible.")) return;
+    const ok = await confirmDialog({
+      title: "Supprimer cette catégorie de billet ?",
+      message: "Cette action est irréversible.",
+      confirmLabel: "Supprimer",
+    });
+    if (!ok) return;
+    setError(null);
     const supabase = createClient();
-    await supabase.from("ticket_categories").delete().eq("id", id);
+    const { error: deleteError } = await supabase.from("ticket_categories").delete().eq("id", id);
+    if (deleteError) {
+      setError(
+        deleteError.code === "23503"
+          ? "Impossible de supprimer : des billets ont déjà été vendus ou réservés dans cette catégorie. Mets son quota à 0 pour arrêter les ventes à la place."
+          : deleteError.message
+      );
+    }
     load();
   }
 
@@ -191,12 +222,7 @@ export default function ManageEventPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour au tableau de bord
-      </Link>
+      <BackLink href="/dashboard" label="Retour au tableau de bord" />
       <div className="card">
         {!editing ? (
           <>

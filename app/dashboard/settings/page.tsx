@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { Palette, Image as ImageIcon, Save, Moon } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { useTheme } from "@/lib/theme";
@@ -86,12 +86,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href="/dashboard"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour au tableau de bord
-      </Link>
+      <BackLink href="/dashboard" label="Retour au tableau de bord" className="mb-4" />
       <h1 className="mb-1 text-2xl font-bold text-navy dark:text-white">Marque de l'organisation</h1>
       <p className="mb-6 text-sm text-gray-500">
         Personnalise le logo et la couleur affichés sur tes pages d'événements publiques.

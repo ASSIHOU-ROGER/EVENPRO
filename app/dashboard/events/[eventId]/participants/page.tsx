@@ -1,9 +1,10 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useConfirm } from "@/lib/confirm";
 
 interface Row {
   id: string;
@@ -21,6 +22,7 @@ const PAGE_SIZE = 50;
 
 export default function ParticipantsPage() {
   const params = useParams();
+  const confirmDialog = useConfirm();
   const eventId = params.eventId as string;
   const [rows, setRows] = useState<Row[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -72,7 +74,13 @@ export default function ParticipantsPage() {
   }, [search]);
 
   async function cancelOrder(orderId: string) {
-    if (!confirm("Annuler cette commande ? Tous ses billets deviendront invalides et le quota sera libéré. Aucun remboursement n'est déclenché automatiquement — si la commande a été payée via K-Pay, tu dois rembourser l'acheteur toi-même (tableau de bord K-Pay ou autre moyen).")) return;
+    const ok = await confirmDialog({
+      title: "Annuler cette commande ?",
+      message:
+        "Tous ses billets deviendront invalides et le quota sera libéré. Aucun remboursement n'est déclenché automatiquement — si la commande a été payée via K-Pay, tu dois rembourser l'acheteur toi-même (tableau de bord K-Pay ou autre moyen).",
+      confirmLabel: "Annuler la commande",
+    });
+    if (!ok) return;
     setCancellingOrderId(orderId);
     setError(null);
     const supabase = createClient();
@@ -106,12 +114,7 @@ export default function ParticipantsPage() {
 
   return (
     <div>
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <BackLink href={`/dashboard/events/${eventId}`} label="Retour à la gestion de l'événement" className="mb-3" />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Participants ({totalCount})</h1>
         <div className="flex gap-2">

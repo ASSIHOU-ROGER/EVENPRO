@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SponsorRecord } from "@/lib/types";
@@ -117,12 +117,7 @@ export default function SponsorsPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <BackLink href={`/dashboard/events/${eventId}`} label="Retour à la gestion de l'événement" />
       <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sponsors & exposants</h1>
 
       <div className="card">

@@ -130,9 +130,14 @@ export default function DashboardHome() {
                 </p>
               )}
               {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
-              <Link href={`/dashboard/events/${ev.event_id}/scan`} className="btn-gold mt-4 inline-block">
-                Ouvrir le scanner
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/dashboard/events/${ev.event_id}/scan`} className="btn-gold text-[11px] py-1.5 px-3">
+                  Ouvrir le scanner
+                </Link>
+                <Link href={`/dashboard/events/${ev.event_id}/live`} className="btn-secondary text-[11px] py-1.5 px-3">
+                  Dashboard temps réel
+                </Link>
+              </div>
             </div>
           ))}
         </div>

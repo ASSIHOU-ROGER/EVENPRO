@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { EventRecord } from "@/lib/types";
@@ -127,12 +127,7 @@ export default function MarketingPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <BackLink href={`/dashboard/events/${eventId}`} label="Retour à la gestion de l'événement" />
       <h1 className="text-2xl font-bold text-navy dark:text-white">Marketing IA</h1>
       <p className="text-sm text-gray-500">
         Génère automatiquement des publications et une affiche pour {event?.name}. Nécessite une clé GEMINI_API_KEY

@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { UserPlus, Trash2, Mail, CheckCircle2, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useConfirm } from "@/lib/confirm";
 import type { EventRecord } from "@/lib/types";
 
 interface StaffRow {
@@ -22,6 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function StaffPage() {
   const params = useParams();
+  const confirmDialog = useConfirm();
   const eventId = params.eventId as string;
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [staff, setStaff] = useState<StaffRow[]>([]);
@@ -109,7 +111,12 @@ export default function StaffPage() {
   }
 
   async function handleRevoke(id: string) {
-    if (!confirm("Révoquer l'accès de ce membre du personnel ? Il ne pourra plus scanner cet événement.")) return;
+    const ok = await confirmDialog({
+      title: "Révoquer cet accès ?",
+      message: "Cette personne ne pourra plus scanner les billets de cet événement.",
+      confirmLabel: "Révoquer",
+    });
+    if (!ok) return;
     const supabase = createClient();
     await supabase.rpc("revoke_event_staff", { p_staff_id: id });
     load();
@@ -119,12 +126,7 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/dashboard/events/${eventId}`}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy hover:underline"
-      >
-        ← Retour à la gestion de l'événement
-      </Link>
+      <BackLink href={`/dashboard/events/${eventId}`} label="Retour à la gestion de l'événement" />
       <div>
         <h1 className="text-2xl font-bold text-navy dark:text-white">Personnel — {event?.name}</h1>
         <p className="mt-1 text-sm text-gray-500">
