@@ -5,22 +5,21 @@ import { initiateKpayPayment } from "@/lib/kpay";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { eventId, eventName, buyerName, buyerEmail, buyerPhone, items } = body as {
+    const { eventId, eventName, buyerName, buyerEmail, buyerPhone, provider, items } = body as {
       eventId: string;
       eventName: string;
       buyerName: string;
       buyerEmail: string;
       buyerPhone: string;
+      provider: string;
       items: { ticket_category_id: string; quantity: number }[];
     };
 
     if (!buyerPhone || buyerPhone.trim().length < 8) {
       return NextResponse.json({ error: "Numéro de téléphone requis (avec indicatif pays)." }, { status: 400 });
     }
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    if (!siteUrl) {
-      return NextResponse.json({ error: "NEXT_PUBLIC_SITE_URL non configuré côté serveur." }, { status: 500 });
+    if (!provider) {
+      return NextResponse.json({ error: "Opérateur Mobile Money requis." }, { status: 400 });
     }
 
     const supabase = createPublicServerClient();
@@ -45,15 +44,20 @@ export async function POST(req: NextRequest) {
     const orderId: string = pending.order_id;
     const totalAmount: number = pending.total_amount;
 
+    // Mode USSD : le client valide directement sur son téléphone (compose le code reçu), pas de
+    // redirection vers une page hébergée par K-Pay. Voir lib/kpayProviders.ts pour le catalogue.
     const result = await initiateKpayPayment({
+      mode: "USSD",
       amount: totalAmount,
       externalId: orderId,
+      provider,
+      phoneNumber: buyerPhone,
       description: `Billet(s) — ${eventName}`,
-      returnUrl: `${siteUrl}/paiement/retour?order=${orderId}`,
-      cancelUrl: `${siteUrl}/paiement/retour?order=${orderId}`,
+      customerName: buyerName,
+      customerEmail: buyerEmail,
     });
 
-    if (!result.success || !result.gatewayUrl || !result.id) {
+    if (!result.success || !result.id) {
       // Le paiement n'a pas pu être initié : on libère la commande immédiatement.
       await supabase.rpc("fail_kpay_order", {
         p_order_id: orderId,
@@ -70,7 +74,7 @@ export async function POST(req: NextRequest) {
       p_secret: secret,
     });
 
-    return NextResponse.json({ checkoutUrl: result.gatewayUrl, orderId });
+    return NextResponse.json({ orderId, status: result.status, message: result.message });
   } catch (err: any) {
     console.error("[kpay/init] erreur:", err);
     return NextResponse.json({ error: err.message || "Erreur serveur." }, { status: 500 });

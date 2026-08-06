@@ -25,13 +25,25 @@ function authHeaders() {
   };
 }
 
-export interface KpayInitiateParams {
-  amount: number;
-  externalId: string;
-  returnUrl: string;
-  cancelUrl?: string;
-  description?: string;
-}
+export type KpayInitiateParams =
+  | {
+      mode: "GATEWAY";
+      amount: number;
+      externalId: string;
+      returnUrl: string;
+      cancelUrl?: string;
+      description?: string;
+    }
+  | {
+      mode: "USSD";
+      amount: number;
+      externalId: string;
+      provider: string;
+      phoneNumber: string;
+      description?: string;
+      customerName?: string;
+      customerEmail?: string;
+    };
 
 export interface KpayInitiateResult {
   success: boolean;
@@ -42,21 +54,35 @@ export interface KpayInitiateResult {
 }
 
 export async function initiateKpayPayment(params: KpayInitiateParams): Promise<KpayInitiateResult> {
+  const body =
+    params.mode === "GATEWAY"
+      ? {
+          amount: Math.round(params.amount),
+          externalId: params.externalId,
+          returnUrl: params.returnUrl,
+          cancelUrl: params.cancelUrl,
+          description: params.description,
+        }
+      : {
+          amount: Math.round(params.amount),
+          externalId: params.externalId,
+          provider: params.provider,
+          phoneNumber: params.phoneNumber,
+          description: params.description,
+          customerName: params.customerName,
+          customerEmail: params.customerEmail,
+        };
+
   const res = await fetch(`${KPAY_BASE_URL}/api/v1/payments/init`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({
-      amount: Math.round(params.amount),
-      externalId: params.externalId,
-      returnUrl: params.returnUrl,
-      cancelUrl: params.cancelUrl,
-      description: params.description,
-    }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) {
     return { success: false, message: data.message || "Erreur K-Pay inconnue." };
   }
+  // En mode USSD, il n'y a pas de gatewayUrl : le client valide directement sur son téléphone.
   return { success: true, id: data.id, gatewayUrl: data.gatewayUrl, status: data.status, message: data.message };
 }
 

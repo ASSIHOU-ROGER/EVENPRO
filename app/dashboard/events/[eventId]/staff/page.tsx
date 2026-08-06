@@ -89,7 +89,7 @@ export default function StaffPage() {
         .maybeSingle();
       const organizerName = (profile as any)?.organizations?.name;
 
-      await fetch("/api/staff/invite-email", {
+      const res = await fetch("/api/staff/invite-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +99,14 @@ export default function StaffPage() {
           inviteToken: data.invite_token,
         }),
       });
-      setSentTo(data.email);
+      const emailResult = await res.json().catch(() => null);
+      if (!res.ok || emailResult?.sent === false) {
+        setError(
+          `Invitation créée, mais l'envoi de l'email a échoué${emailResult?.error ? ` : ${emailResult.error}` : "."} L'invité peut quand même utiliser le lien si tu le lui transmets autrement.`
+        );
+      } else {
+        setSentTo(data.email);
+      }
     } catch {
       // L'invitation est créée même si l'email échoue à partir ; l'organisateur peut réessayer.
       setError("Invitation créée, mais l'envoi de l'email a échoué. Vérifie ta config email.");

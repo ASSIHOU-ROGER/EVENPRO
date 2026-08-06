@@ -7,6 +7,7 @@ import type { EventRecord, TicketCategoryRecord, SponsorRecord, ProgramSessionRe
 import { TICKET_TYPE_LABELS } from "@/lib/types";
 import { Calendar, MapPin, ChevronDown, Ticket, Minus, Plus } from "lucide-react";
 import { TicketCard, type PurchasedTicket } from "@/components/public/TicketCard";
+import { KPAY_PROVIDERS, formatKpayPhone } from "@/lib/kpayProviders";
 
 export function PublicEventClient({ slug }: { slug: string }) {
   const [event, setEvent] = useState<EventRecord | null>(null);
@@ -22,6 +23,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [provider, setProvider] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<{
@@ -126,9 +128,17 @@ export function PublicEventClient({ slug }: { slug: string }) {
       return;
     }
 
-    // Billets payants : on crée une commande en attente puis on redirige vers le paiement K-Pay
-    // (Mobile Money ou carte bancaire). Les billets ne sont émis qu'une fois le paiement confirmé
-    // côté serveur (voir /paiement/retour et /api/payments/kpay/webhook).
+    // Billets payants, mode USSD : le client valide directement la demande sur son téléphone
+    // Mobile Money (pas de redirection vers une page hébergée). Les billets ne sont émis qu'une
+    // fois le paiement confirmé côté serveur (voir /paiement/retour, qui gère le suivi du statut).
+    const selectedProvider = KPAY_PROVIDERS.find((p) => p.code === provider);
+    if (!selectedProvider) {
+      setError("Sélectionne ton opérateur Mobile Money.");
+      setSubmitting(false);
+      return;
+    }
+    const normalizedPhone = formatKpayPhone(selectedProvider.dialCode, buyerPhone);
+
     try {
       const res = await fetch("/api/payments/kpay/init", {
         method: "POST",
@@ -138,7 +148,8 @@ export function PublicEventClient({ slug }: { slug: string }) {
           eventName: event.name,
           buyerName,
           buyerEmail,
-          buyerPhone,
+          buyerPhone: normalizedPhone,
+          provider: selectedProvider.code,
           items,
         }),
       });
@@ -148,7 +159,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
         setSubmitting(false);
         return;
       }
-      window.location.href = data.checkoutUrl;
+      window.location.href = `/paiement/retour?order=${data.orderId}`;
     } catch {
       setError("Impossible de contacter le service de paiement. Réessaie dans un instant.");
       setSubmitting(false);
@@ -311,12 +322,35 @@ export function PublicEventClient({ slug }: { slug: string }) {
                 <label className="label">Email</label>
                 <input type="email" className="input" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} required />
               </div>
+              {total > 0 && (
+                <div>
+                  <label className="label">Opérateur Mobile Money</label>
+                  <select className="input" value={provider} onChange={(e) => setProvider(e.target.value)} required>
+                    <option value="">Sélectionne ton opérateur</option>
+                    {Object.entries(
+                      KPAY_PROVIDERS.reduce<Record<string, typeof KPAY_PROVIDERS>>((acc, p) => {
+                        (acc[p.country] ??= []).push(p);
+                        return acc;
+                      }, {})
+                    ).map(([country, providers]) => (
+                      <optgroup key={country} label={country}>
+                        {providers.map((p) => (
+                          <option key={p.code} value={p.code}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
-                <label className="label">Téléphone</label>
+                <label className="label">Téléphone{total > 0 ? " Mobile Money" : ""}</label>
                 <input
                   className="input"
                   value={buyerPhone}
                   onChange={(e) => setBuyerPhone(e.target.value)}
+                  placeholder={total > 0 ? "Numéro sans indicatif (ex : 653456789)" : undefined}
                   required={total > 0}
                 />
               </div>
@@ -336,7 +370,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
               </button>
               {total > 0 && (
                 <p className="text-center text-xs text-gray-400">
-                  Paiement sécurisé via K-Pay (Mobile Money ou carte bancaire). Tu seras redirigé(e) vers la page de paiement pour choisir ton opérateur.
+                  Paiement sécurisé via K-Pay (Mobile Money). Une fois validé, tu recevras une demande directement sur ton téléphone — valide-la (USSD/notification) pour confirmer.
                 </p>
               )}
             </form>
