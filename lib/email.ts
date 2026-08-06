@@ -1,7 +1,39 @@
-// Trois fournisseurs supportés, au choix selon la clé configurée (ordre de priorité si plusieurs
-// sont présentes : Mailjet > Brevo > Resend). Si aucune clé n'est configurée, l'email est
-// simplement loggué (mode démo).
+// Quatre fournisseurs supportés, au choix selon la clé configurée (ordre de priorité si plusieurs
+// sont présentes : EmailJS > Mailjet > Brevo > Resend). Si aucune clé n'est configurée, l'email
+// est simplement loggué (mode démo).
+//
+// EmailJS envoie réellement via le compte Gmail connecté dans son dashboard (OAuth) — contrairement
+// à Mailjet/Brevo qui usurpent l'adresse "From" depuis un serveur tiers, ce qui se fait bloquer par
+// la politique DMARC de Google quand l'adresse est @gmail.com. EmailJS est donc prioritaire ici.
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  const emailjsServiceId = process.env.EMAILJS_SERVICE_ID;
+  const emailjsTemplateId = process.env.EMAILJS_TEMPLATE_ID;
+  const emailjsPublicKey = process.env.EMAILJS_PUBLIC_KEY;
+  const emailjsPrivateKey = process.env.EMAILJS_PRIVATE_KEY;
+  if (emailjsServiceId && emailjsTemplateId && emailjsPublicKey) {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: emailjsServiceId,
+        template_id: emailjsTemplateId,
+        user_id: emailjsPublicKey,
+        accessToken: emailjsPrivateKey,
+        template_params: {
+          to_email: to,
+          subject,
+          html_content: html,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`EmailJS a refusé l'envoi (HTTP ${res.status}) : ${errBody}`);
+    }
+    const result = await res.text();
+    return { sent: true, result };
+  }
+
   const mailjetKey = process.env.MAILJET_API_KEY;
   const mailjetSecret = process.env.MAILJET_SECRET_KEY;
   if (mailjetKey && mailjetSecret) {
@@ -67,7 +99,7 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
     return { sent: true, result };
   }
 
-  console.log(`[email] Aucune clé MAILJET_API_KEY / BREVO_API_KEY / RESEND_API_KEY configurée — email "${subject}" pour ${to} non envoyé (mode démo).`);
+  console.log(`[email] Aucune clé EMAILJS_* / MAILJET_API_KEY / BREVO_API_KEY / RESEND_API_KEY configurée — email "${subject}" pour ${to} non envoyé (mode démo).`);
   return { sent: false, reason: "no_api_key" };
 }
 
