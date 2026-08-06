@@ -96,12 +96,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <main>
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-xs uppercase text-gray-400">Organisation</p>
-            <h1 className="text-lg font-bold text-navy dark:text-white">{orgName ?? "..."}</h1>
+            <h1 className="truncate text-lg font-bold text-navy dark:text-white">{orgName ?? "..."}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link href="/dashboard/settings" className="btn-secondary">
               Paramètres
             </Link>

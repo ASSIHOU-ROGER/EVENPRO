@@ -283,7 +283,7 @@ export default function ManageEventPage() {
               <label className="label">Description</label>
               <textarea className="input" rows={4} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="label">Lieu</label>
                 <input className="input" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
@@ -374,34 +374,36 @@ export default function ManageEventPage() {
       <div className="card">
         <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Catégories de billets</h2>
         {categories.length > 0 && (
-          <table className="mb-6 w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-500">
-                <th className="py-2">Nom</th>
-                <th>Type</th>
-                <th>Prix</th>
-                <th>Vendus</th>
-                <th>Quota</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((c) => (
-                <tr key={c.id} className="border-b">
-                  <td className="py-2 font-medium">{c.name}</td>
-                  <td>{TICKET_TYPE_LABELS[c.type]}</td>
-                  <td>{c.price > 0 ? `${c.price} ${c.currency}` : "Gratuit"}</td>
-                  <td>{c.sold_count}</td>
-                  <td>{c.quota || "∞"}</td>
-                  <td>
-                    <button onClick={() => deleteCategory(c.id)} className="text-red-600 hover:underline">
-                      Supprimer
-                    </button>
-                  </td>
+          <div className="mb-6 overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="py-2">Nom</th>
+                  <th>Type</th>
+                  <th>Prix</th>
+                  <th>Vendus</th>
+                  <th>Quota</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {categories.map((c) => (
+                  <tr key={c.id} className="border-b">
+                    <td className="py-2 font-medium">{c.name}</td>
+                    <td>{TICKET_TYPE_LABELS[c.type]}</td>
+                    <td>{c.price > 0 ? `${c.price} ${c.currency}` : "Gratuit"}</td>
+                    <td>{c.sold_count}</td>
+                    <td>{c.quota || "∞"}</td>
+                    <td>
+                      <button onClick={() => deleteCategory(c.id)} className="text-red-600 hover:underline">
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <form onSubmit={addCategory} className="grid grid-cols-2 gap-3 sm:grid-cols-5">

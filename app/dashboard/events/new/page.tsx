@@ -146,7 +146,7 @@ export default function NewEventPage() {
           {aiError && <p className="mt-1 text-xs text-red-600">{aiError}</p>}
           {!name && <p className="mt-1 text-xs text-gray-400">Renseigne le nom de l'événement pour activer la génération IA.</p>}
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Lieu</label>
             <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
