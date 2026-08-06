@@ -434,6 +434,7 @@ export default function ManageEventPage() {
         <Link href={`/dashboard/events/${eventId}/stats`} className="btn-secondary">Voir les statistiques</Link>
         <Link href={`/dashboard/events/${eventId}/participants`} className="btn-secondary">Liste des participants</Link>
         <Link href={`/dashboard/events/${eventId}/scan`} className="btn-secondary">Ouvrir le scanner</Link>
+        <Link href={`/dashboard/events/${eventId}/staff`} className="btn-secondary">Personnel</Link>
         <Link href={`/dashboard/events/${eventId}/badges`} className="btn-secondary">Badges à imprimer</Link>
         <Link href={`/dashboard/events/${eventId}/sponsors`} className="btn-secondary">Sponsors & exposants</Link>
         <Link href={`/dashboard/events/${eventId}/program`} className="btn-secondary">Programme</Link>

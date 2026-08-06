@@ -9,6 +9,7 @@ import {
   Search,
   MapPin,
   Calendar,
+  QrCode,
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { createClient } from "@/lib/supabase/client";
@@ -35,6 +36,9 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("Tous");
+  const [staffEvents, setStaffEvents] = useState<
+    { event_id: string; event_name: string; event_date: string | null; location: string | null }[]
+  >([]);
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +53,11 @@ export default function DashboardHome() {
 
       const evs = (eventData as EventRecord[]) ?? [];
       setEvents(evs);
+
+      if (evs.length === 0) {
+        const { data: staffData } = await supabase.rpc("get_my_staff_events");
+        setStaffEvents(staffData ?? []);
+      }
 
       if (evs.length > 0) {
         const eventIds = evs.map((e) => e.id);
@@ -103,6 +112,33 @@ export default function DashboardHome() {
   }, [events, search, statusFilter]);
 
   if (loading) return <p className="text-gray-500">Chargement...</p>;
+
+  if (events.length === 0 && staffEvents.length > 0) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500">Événements où tu es autorisé(e) à scanner les billets.</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {staffEvents.map((ev) => (
+            <div key={ev.event_id} className="card">
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-gold">
+                <QrCode className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{ev.event_name}</h3>
+              {ev.event_date && (
+                <p className="mt-1 text-sm text-gray-500">
+                  {new Date(ev.event_date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                </p>
+              )}
+              {ev.location && <p className="text-sm text-gray-500">{ev.location}</p>}
+              <Link href={`/dashboard/events/${ev.event_id}/scan`} className="btn-gold mt-4 inline-block">
+                Ouvrir le scanner
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (events.length === 0) {
     return (
