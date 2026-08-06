@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { createClient } from "@/lib/supabase/client";
+import { safeUploadPath } from "@/lib/storagePath";
 
 const CATEGORIES = [
   "Concert", "Conférence", "Église", "Festival", "Mariage",
@@ -68,7 +69,7 @@ export default function NewEventPage() {
 
     let imageUrl: string | null = null;
     if (imageFile) {
-      const path = `${user.id}/${Date.now()}-${imageFile.name}`;
+      const path = safeUploadPath(user.id, imageFile);
       const { error: uploadError } = await supabase.storage
         .from("event-images")
         .upload(path, imageFile);

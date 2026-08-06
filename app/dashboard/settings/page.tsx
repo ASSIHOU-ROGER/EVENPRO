@@ -5,6 +5,7 @@ import { Palette, Image as ImageIcon, Save, Moon } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { useTheme } from "@/lib/theme";
 import { createClient } from "@/lib/supabase/client";
+import { safeUploadPath } from "@/lib/storagePath";
 import type { OrganizationRecord } from "@/lib/types";
 
 const PRESET_COLORS = ["#2563eb", "#0f172a", "#059669", "#dc2626", "#7c3aed", "#ea580c"];
@@ -53,7 +54,7 @@ export default function SettingsPage() {
 
     let logoUrl = org.logo_url;
     if (logoFile) {
-      const path = `${user.id}/${Date.now()}-${logoFile.name}`;
+      const path = safeUploadPath(user.id, logoFile);
       const { error: uploadError } = await supabase.storage.from("org-logos").upload(path, logoFile);
       if (uploadError) {
         setError(uploadError.message);

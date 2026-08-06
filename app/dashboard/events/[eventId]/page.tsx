@@ -6,6 +6,7 @@ import BackLink from "@/components/BackLink";
 import { Sparkles, Pencil, Trash2, Ban, Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "@/lib/confirm";
+import { safeUploadPath } from "@/lib/storagePath";
 import type { EventRecord, TicketCategoryRecord, TicketType } from "@/lib/types";
 import { TICKET_TYPE_LABELS } from "@/lib/types";
 
@@ -91,7 +92,7 @@ export default function ManageEventPage() {
     let imageUrl = event.image_url;
     if (editImageFile) {
       const { data: userData } = await supabase.auth.getUser();
-      const path = `${userData.user?.id}/${Date.now()}-${editImageFile.name}`;
+      const path = safeUploadPath(userData.user?.id ?? "unknown", editImageFile);
       const { error: uploadError } = await supabase.storage.from("event-images").upload(path, editImageFile);
       if (uploadError) {
         setError(uploadError.message);

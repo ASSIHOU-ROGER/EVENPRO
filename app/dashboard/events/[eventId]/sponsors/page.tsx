@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import BackLink from "@/components/BackLink";
 import { Pencil, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { safeUploadPath } from "@/lib/storagePath";
 import type { SponsorRecord } from "@/lib/types";
 
 export default function SponsorsPage() {
@@ -71,7 +72,7 @@ export default function SponsorsPage() {
     let logoUrl = existingLogoUrl;
     if (logoFile) {
       const { data: userData } = await supabase.auth.getUser();
-      const path = `${userData.user?.id}/${Date.now()}-${logoFile.name}`;
+      const path = safeUploadPath(userData.user?.id ?? "unknown", logoFile);
       const { error: uploadError } = await supabase.storage.from("sponsor-logos").upload(path, logoFile);
       if (uploadError) {
         setError(uploadError.message);
