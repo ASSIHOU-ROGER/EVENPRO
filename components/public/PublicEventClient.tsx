@@ -123,6 +123,7 @@ export function PublicEventClient({ slug }: { slug: string }) {
           tickets,
           totalAmount: data.total_amount,
           currency: data.currency,
+          orderId: data.order_id,
         }),
       }).catch(() => {});
       return;

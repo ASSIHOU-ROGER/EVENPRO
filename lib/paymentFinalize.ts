@@ -18,9 +18,11 @@ export async function verifyAndFinalizeKpayOrder(orderId: string) {
   });
   if (orderError) throw orderError;
 
-  // Déjà finalisée (paiement confirmé ou échoué) : rien à refaire.
+  // Déjà finalisée (paiement confirmé ou échoué) : rien à refaire. Si déjà payée, on renvoie quand
+  // même la liste des billets (via get_order_for_payment) pour que la page /paiement/retour reste
+  // consultable/téléchargeable à tout moment, pas seulement juste après le paiement.
   if (order.status === "paid" || order.status === "failed" || order.status === "expired") {
-    return { status: order.status, orderId, tickets: [] as unknown[] };
+    return { status: order.status, orderId, tickets: (order.tickets as unknown[]) ?? [] };
   }
 
   if (!order.payment_reference) {
@@ -65,6 +67,8 @@ export async function verifyAndFinalizeKpayOrder(orderId: string) {
         )
       ).join("");
 
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+      const ticketsPageUrl = `${siteUrl}/paiement/retour?order=${orderId}`;
       const html = emailShell(
         `Paiement confirmé — ${event?.name ?? ""}`,
         `
@@ -74,6 +78,14 @@ export async function verifyAndFinalizeKpayOrder(orderId: string) {
           ${event?.location ? `<p><strong>Lieu :</strong> ${event.location}</p>` : ""}
           ${ticketsHtml}
           <p style="margin-top:16px;"><strong>Total payé :</strong> ${order.total_amount} ${order.currency}</p>
+          <p style="margin-top:24px;">
+            <a href="${ticketsPageUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:999px;font-weight:bold;">
+              Voir et télécharger mes billets
+            </a>
+          </p>
+          <p style="margin-top:12px;color:#94a3b8;font-size:12px;">
+            Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br>${ticketsPageUrl}
+          </p>
         `
       );
       await sendEmail({ to: order.buyer_email, subject: `Paiement confirmé — ${event?.name ?? "ton événement"}`, html });

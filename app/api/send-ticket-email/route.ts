@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       tickets,
       totalAmount,
       currency,
+      orderId,
     }: {
       buyerName: string;
       buyerEmail: string;
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
       tickets: TicketPayload[];
       totalAmount: number;
       currency: string;
+      orderId?: string;
     } = body;
 
     const ticketsHtml = tickets
@@ -49,6 +51,9 @@ export async function POST(req: NextRequest) {
       )
       .join("");
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+    const ticketsPageUrl = orderId ? `${siteUrl}/paiement/retour?order=${orderId}` : null;
+
     const html = emailShell(
       `Confirmation de billet — ${eventName}`,
       `
@@ -58,8 +63,20 @@ export async function POST(req: NextRequest) {
         ${eventLocation ? `<p><strong>Lieu :</strong> ${eventLocation}</p>` : ""}
         ${ticketsHtml}
         <p style="margin-top:16px;"><strong>Total payé :</strong> ${totalAmount} ${currency}</p>
+        ${
+          ticketsPageUrl
+            ? `<p style="margin-top:24px;">
+                <a href="${ticketsPageUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:999px;font-weight:bold;">
+                  Voir et télécharger mes billets
+                </a>
+              </p>
+              <p style="margin-top:12px;color:#94a3b8;font-size:12px;">
+                Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :<br>${ticketsPageUrl}
+              </p>`
+            : ""
+        }
         <p style="margin-top:24px;color:#555;font-size:13px;">
-          Présente le QR code de chaque billet (ci-dessus, ou téléchargeable en image/PDF depuis la page de confirmation) à l'entrée de l'événement.
+          Présente le QR code de chaque billet (ci-dessus, ou téléchargeable en image/PDF depuis la page ci-dessus) à l'entrée de l'événement.
         </p>
       `
     );
